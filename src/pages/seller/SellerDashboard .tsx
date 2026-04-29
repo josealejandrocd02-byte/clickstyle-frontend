@@ -7,7 +7,7 @@ import ProductList from "@/components/dashboard/ProductList";
 
 import { useCategories } from "@/hooks/useCategories";
 import { useProducts } from "@/hooks/useProducts";
-import { deleteProduct } from "@/services/productService";
+import { deleteProduct, ProductFormData } from "@/services/productService";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useStore } from "@/hooks/useStore";
@@ -16,16 +16,16 @@ import FloatingSocials from "@/components/dashboard/FloatingSocials";
 import ViewOrders from "@/components/dashboard/ViewOrders";
 import { useOrders } from "@/hooks/useOrders";
 
-const initialForm = {
+const initialForm: ProductFormData = {
   name: "",
   description: "",
   price: "",
-  stock: "",
   categoryId: "",
-  sizes: "",
-  colors: "",
-  image: null as File | null,
-  image2: null as File | null,
+
+  variants: [], // ✅ OBLIGATORIO
+
+  image: null,
+  image2: null,
   imageUrl: "",
   imageUrl2: "",
 };
@@ -55,32 +55,37 @@ const SellerDashboard = () => {
 
 
   const handleSave = () => {
-    saveProduct({
-      ...form,
-      id: editingId,
-    });
+  saveProduct({
+    ...form,
+    id: editingId || undefined,
+  });
 
-    handleCancel();
-  };
+  handleCancel();
+};
 
   const handleEdit = (product: any) => {
-    setForm({
-      name: product.name,
-      description: product.description,
-      price: product.price.toString(),
-      stock: product.stock.toString(),
-      categoryId: product.categoryId || "",
-      sizes: product.sizes || "",
-      colors: product.colors || "",
-      image: null,
-      image2: null,
-      imageUrl: product.imageUrl,
-      imageUrl2: product.imageUrl2,
-    });
+  setForm({
+    name: product.name,
+    description: product.description,
+    price: product.price.toString(),
+    categoryId: product.categoryId || "",
 
-    setEditingId(product.id);
-    setShowForm(true);
-  };
+    // 🔥 CLAVE: mapear variantes reales
+    variants: product.variants?.map((v: any) => ({
+      size: v.size,
+      color: v.color,
+      stock: v.stock,
+    })) || [],
+
+    image: null,
+    image2: null,
+    imageUrl: product.imageUrl,
+    imageUrl2: product.imageUrl2,
+  });
+
+  setEditingId(product.id);
+  setShowForm(true);
+};
 
   const handleCancel = () => {
     setForm(initialForm);
@@ -107,62 +112,60 @@ const confirmDelete = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <OwnerStoreHeader
-        store={store}
-        isLoading={isStoreLoading}
-        usedProducts={planUsage?.usedProducts}
-        productLimit={planUsage?.productLimit}
-      />
+      <main className="container py-6 space-y-6">
+        <OwnerStoreHeader
+          store={store}
+          isLoading={isStoreLoading}
+          usedProducts={planUsage?.usedProducts}
+          productLimit={planUsage?.productLimit}
+        />
+        {/* HEADER */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+          {/* LEFT */}
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Productos
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Administra tu catálogo y pedidos
+            </p>
+          </div>
 
-{/* HEADER */}
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* RIGHT ACTIONS */}
+          <div className="flex items-center gap-2">
 
-  {/* LEFT */}
-  <div>
-    <h2 className="text-2xl font-bold tracking-tight">
-      Productos
-    </h2>
-    <p className="text-sm text-muted-foreground">
-      Administra tu catálogo y pedidos
-    </p>
-  </div>
+            {/* 🛒 PEDIDOS */}
+            <button
+              onClick={() => setOpenOrders(true)}
+              className="relative flex items-center gap-2 px-4 h-10 rounded-xl border bg-background hover:bg-muted transition"
+            >
+              <ShoppingCart size={17} />
+              Pedidos
 
-  {/* RIGHT ACTIONS */}
-  <div className="flex items-center gap-2">
+              {/* 🔴 BADGE (opcional) */}
+              {orders.length > 0 && (
+                <span className="absolute -top-2 -right-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">
+                  {orders.length}
+                </span>
+              )}
+            </button>
 
-    {/* 🛒 PEDIDOS */}
-    <button
-      onClick={() => setOpenOrders(true)}
-      className="relative flex items-center gap-2 px-4 h-10 rounded-xl border bg-background hover:bg-muted transition"
-    >
-      <ShoppingCart size={17} />
-      Pedidos
+            {/* ➕ ADD PRODUCT */}
+            <button
+              onClick={() => setShowForm((prev) => !prev)}
+              className={`flex items-center gap-2 px-4 h-10 rounded-xl text-white transition ${
+                showForm
+                  ? "bg-gray-600 hover:bg-gray-700"
+                  : "bg-primary hover:bg-primary/90"
+              }`}
+            >
+              {showForm ? <X size={16} /> : <Plus size={16} />}
+              {showForm ? "Cancelar" : "Nuevo producto"}
+            </button>
 
-      {/* 🔴 BADGE (opcional) */}
-      {orders.length > 0 && (
-        <span className="absolute -top-2 -right-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">
-          {orders.length}
-        </span>
-      )}
-    </button>
-
-    {/* ➕ ADD PRODUCT */}
-    <button
-      onClick={() => setShowForm((prev) => !prev)}
-      className={`flex items-center gap-2 px-4 h-10 rounded-xl text-white transition ${
-        showForm
-          ? "bg-gray-600 hover:bg-gray-700"
-          : "bg-primary hover:bg-primary/90"
-      }`}
-    >
-      {showForm ? <X size={16} /> : <Plus size={16} />}
-      {showForm ? "Cancelar" : "Nuevo producto"}
-    </button>
-
-  </div>
-</div>
+          </div>
+        </div>
 
 
 
@@ -260,14 +263,15 @@ const confirmDelete = () => {
           instagram={store?.instagramUrl}
           facebook={store?.facebookUrl}
         />
-        <ViewOrders
+
+      </main>
+          <ViewOrders
           open={openOrders}
           onClose={() => setOpenOrders(false)}
           orders={orders}
           onConfirm={confirmOrder}
           onCancel={cancelOrder}
         />
-      </main>
     </div>
   );
 };

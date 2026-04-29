@@ -3,53 +3,39 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import ProductDetail from "./pages/ProductDetail.tsx";
-import StorePage from "./pages/StorePage.tsx";
-import StoresPage from "./pages/StoresPage.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import LoginPage from "./pages/LoginPage.tsx";
-import { getRole, getToken, removeRole, removeToken } from "@/utils/storage";
-import RegisterPage from "./pages/RegisterPage.tsx";
-import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
-import SellerDashboard from "./pages/seller/SellerDashboard .tsx";
-import { isAuthenticated, isTokenValid } from "./utils/isTokenValid.ts";
+
+import Index from "./pages/Index";
+import ProductDetail from "./pages/ProductDetail";
+import StorePage from "./pages/StorePage";
+import StoresPage from "./pages/StoresPage";
+import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 
 
-interface Props {
-  children: JSX.Element;
-  role?: string;
-}
+import UserDashboard from "./pages/user/UserDashboard";
+
+import { getRole } from "@/utils/storage";
+import { isAuthenticated } from "./utils/isTokenValid";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import SellerDashboard from "./pages/seller/SellerDashboard ";
+
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children, role }: Props) => {
+/* 🔐 PROTECTED */
+const ProtectedRoute = ({ children, roles }: any) => {
   if (!isAuthenticated()) {
-    return <Navigate to="/login" />;
-  }
-
-  const userRole = getRole();
-
-  if (role && userRole !== role) {
-    return <Navigate to="/" />;
-  }
-
-  return children;
-};
-
-const RoleRedirect = () => {
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
   const role = getRole();
 
-  if (role === "ADMIN") return <Navigate to="/admin" />;
-  if (role === "OWNER") return <Navigate to="/dashboard" />;
+  if (roles && !roles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
 
-  return <Navigate to="/login" />;
+  return children;
 };
-
-
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -59,7 +45,8 @@ const App = () => (
 
       <BrowserRouter>
         <Routes>
-          {/* 🌐 PÚBLICAS */}
+
+          {/* 🌐 PUBLIC */}
           <Route path="/" element={<Index />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/store/:id" element={<StorePage />} />
@@ -69,30 +56,37 @@ const App = () => (
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* 🔁 REDIRECT AUTOMÁTICO */}
-          <Route path="/redirect" element={<RoleRedirect />} />
-
-          {/* 👑 ADMIN */}
+          {/* 👤 USER PANEL */}
           <Route
-            path="/admin"
+            path="/dashboard"
             element={
-              <ProtectedRoute role="ADMIN">
-                <AdminDashboard />
+              <ProtectedRoute roles={["USER", "OWNER"]}>
+                <UserDashboard />
               </ProtectedRoute>
             }
           />
 
-          {/* 🏪 SELLER */}
+          {/* 🏪 STORE PANEL */}
           <Route
-            path="/dashboard"
+            path="/store/dashboard"
             element={
-              <ProtectedRoute role="OWNER">
+              <ProtectedRoute roles={["OWNER"]}>
                 <SellerDashboard />
               </ProtectedRoute>
             }
           />
 
-          {/* ❌ NOT FOUND */}
+          {/* 👑 ADMIN */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ❌ */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

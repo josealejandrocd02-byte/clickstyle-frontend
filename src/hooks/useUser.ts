@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getMe, updateUser, UserDTO, UpdateUserDTO, changePassword, ChangePasswordDTO, changeUsername, ChangeUsernameDTO } from "@/services/userService";
+import { getMe, updateUser, UserDTO, UpdateUserDTO, changePassword, ChangePasswordDTO,ChangeEmailDTO,changeEmail, checkUsername, checkEmailExists } from "@/services/userService";
 
 export const useUser = () => {
   const [user, setUser] = useState<UserDTO | null>(null);
@@ -48,12 +48,13 @@ export const useUser = () => {
     setIsUpdating(false);
   }
 };
-const changeUsernameFn = async (data: ChangeUsernameDTO) => {
+
+const changeEmailFn = async (data: ChangeEmailDTO) => {
   try {
     setIsUpdating(true);
-    const res = await changeUsername(data);
+    const res = await changeEmail(data);
 
-    // opcional: refrescar usuario
+    // 🔄 refrescar usuario (importante porque cambió email)
     await fetchUser();
 
     return res;
@@ -61,6 +62,15 @@ const changeUsernameFn = async (data: ChangeUsernameDTO) => {
     setIsUpdating(false);
   }
 };
+
+const checkUsernameFn = async (username: string) => {
+  return await checkUsername(username);
+};
+
+const checkEmailFn = async (email: string) => {
+  return await checkEmailExists(email);
+};
+
   return {
     user,
     loading,
@@ -68,6 +78,8 @@ const changeUsernameFn = async (data: ChangeUsernameDTO) => {
     isUpdating,
     refresh: fetchUser,
     changePassword: changePasswordFn,
-    changeUsername:changeUsernameFn,
+    changeEmail: changeEmailFn, 
+    checkUsername: checkUsernameFn,
+    checkEmail: checkEmailFn,
   };
 };

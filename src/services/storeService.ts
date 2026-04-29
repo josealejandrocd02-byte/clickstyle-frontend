@@ -17,6 +17,8 @@ export interface StoreDTO {
 
   logoUrl?: string;
   bannerUrl?: string;
+  hasPlan?: boolean;
+  planName?: string;
 }
 
 /* 🧾 FORM del frontend */

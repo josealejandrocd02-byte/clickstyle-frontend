@@ -2,19 +2,23 @@ import api from "@/api/client";
 import { Dispatch, SetStateAction } from "react";
 
 /* 📦 FORM COMPLETO */
+export interface VariantForm {
+  size: string;
+  color: string;
+  stock: number | ""; // ✅ clave
+}
+
 export interface ProductFormData {
   id?: string;
 
   name: string;
   description: string;
   price: string;
-  stock: string;
 
   categoryId?: string;
 
-  // 🧠 NUEVO
-  sizes?: string;   // "S,M,L"
-  colors?: string;  // "Rojo,Negro"
+  // 🔥 NUEVO
+  variants: VariantForm[];
 
   // 🖼 imágenes
   image: File | null;
@@ -47,20 +51,13 @@ export const createOrUpdateProduct = async (form: ProductFormData) => {
   data.append("name", form.name);
   data.append("description", form.description);
   data.append("price", form.price);
-  data.append("stock", form.stock);
 
   if (form.categoryId) {
     data.append("categoryId", form.categoryId);
   }
 
-  // 🧠 NUEVO
-  if (form.sizes) {
-    data.append("sizes", form.sizes);
-  }
-
-  if (form.colors) {
-    data.append("colors", form.colors);
-  }
+  // 🔥 CLAVE: enviar variantes como JSON
+  data.append("variants", JSON.stringify(form.variants));
 
   // 🖼 imagen principal
   if (form.image) {
@@ -72,6 +69,19 @@ export const createOrUpdateProduct = async (form: ProductFormData) => {
     data.append("image2", form.image2);
   }
 
+  if (form.variants.length === 0) {
+  throw new Error("Debes agregar al menos una variante");
+  }
+
+  const isInvalidStock = (stock: any) => {
+  if (stock === "") return true;
+    const num = Number(stock);
+    return isNaN(num) || num < 0;
+  };
+
+  if (form.variants.some(v => isInvalidStock(v.stock))) {
+    throw new Error("Stock inválido");
+  }
   if (form.id) {
     return api.put(`/products/updateproduct/${form.id}`, data);
   }
@@ -83,6 +93,4 @@ export const createOrUpdateProduct = async (form: ProductFormData) => {
 export const deleteProduct = async (id: string) => {
   return api.delete(`/products/delete/${id}`);
 };
-
-
 
