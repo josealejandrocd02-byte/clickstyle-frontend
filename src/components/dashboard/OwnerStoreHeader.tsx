@@ -1,7 +1,6 @@
-import { Pencil, Package, TrendingUp, Star, ShieldCheck, UserCog } from "lucide-react";
+import { Pencil, Package, TrendingUp, Star, ShieldCheck, UserCog, Check } from "lucide-react";
 import StoreForm from "./StoreForm";
 import { useState } from "react";
-import EditUser from "../userComponents/EditUser";
 
 interface Props {
   store: {
@@ -11,7 +10,7 @@ interface Props {
     bannerUrl?: string;
 
     status: string;
-    statusLabel: string;
+    statusLabel:string;
     verified: boolean;
   } | null;
 
@@ -30,7 +29,7 @@ const OwnerStoreHeader = ({
   productLimit= 0,
 }: Props) => {
   const [open, setOpen] = useState(false);
-  const [openUser, setOpenUser] = useState(false);
+  const [openUser, setOpenUser] = useState(false); 
 
   if (isLoading) {
     return (
@@ -70,12 +69,7 @@ const OwnerStoreHeader = ({
         >
           <Pencil size={24} />
         </button>
-        <button
-          onClick={() => setOpenUser(true)}
-          className="absolute top-12 right-2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
-        >
-          <UserCog size={24} />
-        </button>
+
 
         {open && <StoreForm onClose={() => setOpen(false)} />}
       </div>
@@ -99,12 +93,10 @@ const OwnerStoreHeader = ({
 
               {/* ✅ VERIFICADA */}
               {store.verified && (
-                <span className="flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 backdrop-blur">
-                  <ShieldCheck size={12} />
-                  Verificada
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white shadow-sm">
+                  <Check size={12} strokeWidth={3} />
                 </span>
               )}
-
 
               {/* 🔥 STATUS */}
               <span
@@ -126,6 +118,9 @@ const OwnerStoreHeader = ({
         <div className="mt-6 grid grid-cols-3 gap-4">
 
           <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+
+
+          
             <Package className="h-5 w-5 text-primary" />
             <div>
               <p className="text-sm font-semibold">{usedProducts}/{productLimit}</p>
@@ -149,7 +144,7 @@ const OwnerStoreHeader = ({
             </div>
           </div>
 
-          {openUser && <EditUser onClose={() => setOpenUser(false)} />}
+      
 
         </div>
 

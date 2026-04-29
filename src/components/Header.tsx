@@ -2,17 +2,20 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { getToken, getRole, removeRole, removeToken, removeUsername } from "@/utils/storage";
-import { isAuthenticated, isTokenValid } from "@/utils/isTokenValid";
+import {
+  getRole,
+  removeRole,
+  removeToken,
+  removeUsername,
+} from "@/utils/storage";
+import { isAuthenticated } from "@/utils/isTokenValid";
 
-const Header = ({}) => {
+const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
-  const token = getToken();
   const role = getRole();
-  const isAuth = isAuthenticated ();
-
+  const isAuth = isAuthenticated();
 
   const handleLogout = () => {
     removeToken();
@@ -22,48 +25,59 @@ const Header = ({}) => {
     navigate("/");
   };
 
-  // 🔥 LOGO DINÁMICO
+  // 🔥 LOGO inteligente
   const getHomeLink = () => {
-    if (token && !isTokenValid(token)) {
-      removeToken();
-      removeRole();
-    }
     if (!isAuth) return "/";
     if (role === "ADMIN") return "/admin";
-    return "/dashboard";
+    return "/dashboard"; // USER + OWNER
   };
 
   return (
     <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
-        
+
         {/* 🔷 LOGO */}
         <Link
           to={getHomeLink()}
-          className="font-display text-xl font-bold tracking-tight text-foreground"
+          className="font-display text-xl font-bold tracking-tight"
         >
           Click<span className="text-primary">Style</span>
         </Link>
 
         {/* 🖥 DESKTOP */}
         <nav className="hidden md:flex items-center gap-6">
-          
-          <Link to="/" className="text-sm font-medium hover:text-foreground">
-            Explore 
+
+          <Link to="/" className="text-sm font-medium">
+            Explore
           </Link>
 
-          <Link to="/stores" className="text-sm font-medium hover:text-foreground">
+          <Link to="/stores" className="text-sm font-medium">
             Stores
           </Link>
 
-          {/* 🔐 PRIVADO */}
           {isAuth ? (
             <>
-              <Link to="/redirect" className="text-sm font-medium">
-                Dashboard
-              </Link>
+              {/* 👤 USER PANEL */}
+              {role !== "ADMIN" && (
+                <Link to="/dashboard" className="text-sm font-medium">
+                  Mi cuenta
+                </Link>
+              )}
 
-              {/* 👑 Badge de rol */}
+              {/* 🏪 STORE DASHBOARD */}
+              {role === "OWNER" && (
+                <Link to="/store/dashboard" className="text-sm font-medium">
+                  Mi tienda
+                </Link>
+              )}
+
+              {/* 👑 ADMIN */}
+              {role === "ADMIN" && (
+                <Link to="/admin" className="text-sm font-medium">
+                  Admin
+                </Link>
+              )}
+
               <span className="text-xs px-2 py-1 bg-muted rounded">
                 {role}
               </span>
@@ -85,7 +99,7 @@ const Header = ({}) => {
                 to="/register"
                 className="text-sm bg-primary text-white px-3 py-1 rounded"
               >
-                Empezar a vender
+                Empezar
               </Link>
             </>
           )}
@@ -102,7 +116,7 @@ const Header = ({}) => {
         </div>
       </div>
 
-      {/* 📱 MOBILE MENU */}
+      {/* 📱 MOBILE */}
       {mobileOpen && (
         <nav className="flex flex-col gap-2 border-t bg-card px-4 pb-4 pt-2 md:hidden">
 
@@ -116,17 +130,35 @@ const Header = ({}) => {
 
           {isAuth ? (
             <>
-              <Link
-                to="/redirect"
-                onClick={() => setMobileOpen(false)}
-                className="px-3 py-2"
-              >
-                Dashboard
-              </Link>
+              {role !== "ADMIN" && (
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className="px-3 py-2"
+                >
+                  Mi cuenta
+                </Link>
+              )}
 
-              <span className="px-3 text-xs text-muted">
-                {role}
-              </span>
+              {role === "OWNER" && (
+                <Link
+                  to="/store/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className="px-3 py-2"
+                >
+                  Mi tienda
+                </Link>
+              )}
+
+              {role === "ADMIN" && (
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  className="px-3 py-2"
+                >
+                  Admin
+                </Link>
+              )}
 
               <button
                 onClick={handleLogout}
@@ -150,7 +182,7 @@ const Header = ({}) => {
                 onClick={() => setMobileOpen(false)}
                 className="px-3 py-2 text-primary"
               >
-                Empezar a vender
+                Empezar
               </Link>
             </>
           )}

@@ -24,11 +24,9 @@ const ProductForm = ({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [image2Preview, setImage2Preview] = useState<string | null>(null);
 
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof ProductFormData, string>>
-  >({});
-
+  const [errors, setErrors] = useState<any>({});
   const [initialForm, setInitialForm] = useState(form);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     setInitialForm(form);
@@ -37,45 +35,52 @@ const ProductForm = ({
   const sizesOptions = ["S", "M", "L", "XL", "XXL"];
 
   const colorsOptions = [
-    { name: "Rojo", value: "red" },
-    { name: "Negro", value: "black" },
-    { name: "Blanco", value: "white" },
-    { name: "Azul", value: "blue" },
-    { name: "Verde", value: "green" },
-    { name: "Gris", value: "gray" },
-    { name: "Café", value: "#6B4423" },
+    "ROJO",
+    "NEGRO",
+    "BLANCO",
+    "AZUL",
+    "VVERDE",
+    "GRIS",
+    "CAFE",
   ];
 
-  // 🔒 VALIDACIONES
+  // 🔒 VALIDACIÓN
   const validate = () => {
-    const newErrors: Partial<Record<keyof ProductFormData, string>> = {};
+    const newErrors: any = {};
 
-    if (!form.name.trim()) {
-      newErrors.name = "El nombre es obligatorio";
-    }
-
-    if (!form.description.trim()) {
+    if (!form.name.trim()) newErrors.name = "El nombre es obligatorio";
+    if (!form.description.trim())
       newErrors.description = "La descripción es obligatoria";
-    }
 
-    if (!form.price || Number(form.price) <= 0) {
+    if (!form.price || Number(form.price) <= 0)
       newErrors.price = "Precio mayor a 0";
-    }
 
-    if (!form.stock || Number(form.stock) <= 0) {
-      newErrors.stock = "Stock mayor a 0";
-    }
-
-    if (!form.categoryId) {
+    if (!form.categoryId)
       newErrors.categoryId = "Selecciona una categoría";
-    }
 
-    if (!form.sizes || form.sizes.split(",").filter(Boolean).length === 0) {
-      newErrors.sizes = "Selecciona al menos una talla";
-    }
+    if (!form.variants || form.variants.length === 0) {
+      newErrors.variants = "Agrega al menos una variante";
+    } else {
+      if (!form.variants || form.variants.length === 0) {
+        newErrors.variants = "Agrega al menos una variante";
+      } else {
+        if (
+          form.variants.some((v) => {
+            const stock = Number(v.stock); // 🔥 normalizamos
+            return !v.size || !v.color || isNaN(stock) || stock < 0;
+          })
+        ) {
+          newErrors.variants = "Datos inválidos en variantes";
+        }
+      }
 
-    if (!form.colors || form.colors.split(",").filter(Boolean).length === 0) {
-      newErrors.colors = "Selecciona al menos un color";
+      const set = new Set(
+        form.variants.map((v) => `${v.size}-${v.color}`)
+      );
+
+      if (set.size !== form.variants.length) {
+        newErrors.variants = "Variantes duplicadas";
+      }
     }
 
     if (!form.image && !form.imageUrl) {
@@ -87,304 +92,287 @@ const ProductForm = ({
   };
 
   const handleSave = () => {
-    if (validate()) onSave();
-  };
+  setSubmitted(true);
 
-  // ❌ CANCELAR INTELIGENTE
+  if (validate()) {
+    onSave();
+  }
+};
+
   const handleCancel = () => {
-    const isDirty =
-      JSON.stringify(form) !== JSON.stringify(initialForm) ||
-      imagePreview ||
-      image2Preview;
-
-    if (isDirty) {
-      const confirmClose = window.confirm(
-        "Tienes cambios sin guardar. ¿Seguro que quieres salir?"
-      );
-
-      if (!confirmClose) return;
-    }
-
-    setImagePreview(null);
-    setImage2Preview(null);
-    setErrors({});
-
-    onClose();
+  onClose();
   };
 
   // 🖼 IMÁGENES
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: any) => {
     const file = e.target.files?.[0] || null;
     setForm({ ...form, image: file });
-
     if (file) setImagePreview(URL.createObjectURL(file));
-
-    if (errors.image) setErrors({ ...errors, image: "" });
   };
 
-  const handleImage2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImage2Change = (e: any) => {
     const file = e.target.files?.[0] || null;
     setForm({ ...form, image2: file });
-
     if (file) setImage2Preview(URL.createObjectURL(file));
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div
-        className="w-full h-full sm:h-auto sm:max-w-3xl bg-card sm:rounded-2xl flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* HEADER */}
-        <CardHeader className="border-b p-4 sm:p-6">
-          <CardTitle>
-            {editingId ? "Editar producto" : "Crear producto"}
-          </CardTitle>
-        </CardHeader>
+  // 🔥 VARIANTES
+  const updateVariant = (index: number, key: string, value: any) => {
+    const updated = [...form.variants];
+    updated[index] = { ...updated[index], [key]: value };
+    setForm({ ...form, variants: updated });
+  };
 
-        {/* BODY */}
-        <CardContent className="space-y-4 p-4 sm:p-6">
-          {/* NAME */}
-          <div>
-            <Input
-              placeholder="Nombre"
-              value={form.name}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  name:
-                    e.target.value.charAt(0).toUpperCase() +
-                    e.target.value.slice(1),
-                })
-              }
-              className={cn(errors.name && "border-destructive")}
-            />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name}</p>
-            )}
-          </div>
+  const addVariant = () => {
+  setForm({
+    ...form,
+    variants: [
+      ...form.variants,
+      { size: "", color: "", stock: "" } // ✅ vacío
+    ],
+  });
+};
 
-          {/* DESCRIPTION */}
-          <div>
-            <Textarea
-              placeholder="Descripción"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              className={cn(errors.description && "border-destructive")}
-            />
-            {errors.description && (
-              <p className="text-sm text-red-500">
-                {errors.description}
-              </p>
-            )}
-          </div>
+  const removeVariant = (index: number) => {
+    setForm({
+      ...form,
+      variants: form.variants.filter((_, i) => i !== index),
+    });
+  };
 
-          {/* PRICE + STOCK */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Input
-                type="number"
-                placeholder="Precio"
-                value={form.price}
-                onChange={(e) =>
-                  setForm({ ...form, price: e.target.value })
-                }
-                className={cn(errors.price && "border-destructive")}
-              />
-              {errors.price && (
-                <p className="text-sm text-red-500">
-                  {errors.price}
-                </p>
-              )}
-            </div>
+return (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    
+    <div className="w-full h-full sm:h-auto sm:max-w-3xl bg-card sm:rounded-2xl shadow-xl flex flex-col overflow-hidden">
 
-            <div>
-              <Input
-                type="number"
-                placeholder="Stock"
-                value={form.stock}
-                onChange={(e) =>
-                  setForm({ ...form, stock: e.target.value })
-                }
-                className={cn(errors.stock && "border-destructive")}
-              />
-              {errors.stock && (
-                <p className="text-sm text-red-500">
-                  {errors.stock}
-                </p>
-              )}
-            </div>
-          </div>
+      {/* HEADER */}
+      <CardHeader className="border-b px-6 py-4">
+        <CardTitle className="text-lg font-semibold">
+          {editingId ? "Editar producto" : "Crear producto"}
+        </CardTitle>
+      </CardHeader>
 
-          {/* CATEGORY */}
-          <div>
-            <select
-              value={form.categoryId || ""}
-              onChange={(e) =>
-                setForm({ ...form, categoryId: e.target.value })
-              }
-              className={cn(
-                "w-full h-11 border rounded-xl px-3 bg-background",
-                errors.categoryId && "border-destructive"
-              )}
-            >
-              <option value="">Categoría</option>
-              {categories.map((c: any) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            {errors.categoryId && (
-              <p className="text-sm text-red-500">
-                {errors.categoryId}
-              </p>
-            )}
-          </div>
+      {/* BODY */}
+      <CardContent className="p-6 space-y-6 overflow-y-auto max-h-[75vh]">
 
-          {/* SIZES */}
-          <div>
-            <Label>Tallas</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {sizesOptions.map((size) => {
-                const isActive = form.sizes?.split(",").includes(size);
+        {/* INFO BASICA */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          
+          <Input
+          placeholder="Nombre del producto"
+          value={form.name}
+          onChange={(e) =>
+            setForm({ ...form, name: e.target.value })
+          }
+          className={cn("h-11", submitted && errors.name && "border-red-500")}
+        />
 
-                return (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => {
-                      const current = form.sizes
-                        ? form.sizes.split(",")
-                        : [];
+        {submitted && errors.name && (
+          <p className="text-red-500 text-sm">{errors.name}</p>
+        )}
 
-                      const updated = isActive
-                        ? current.filter((s) => s !== size)
-                        : [...current, size];
-
-                      setForm({ ...form, sizes: updated.join(",") });
-                    }}
-                    className={cn(
-                      "px-3 py-1 rounded-xl border text-sm",
-                      isActive
-                        ? "bg-primary text-white"
-                        : "hover:bg-muted"
-                    )}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
-            </div>
-            {errors.sizes && (
-              <p className="text-sm text-red-500">{errors.sizes}</p>
-            )}
-          </div>
-
-          {/* COLORS */}
-          <div>
-            <Label>Colores</Label>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {colorsOptions.map((color) => {
-                const isActive = form.colors
-                  ?.split(",")
-                  .includes(color.name);
-
-                return (
-                  <button
-                    key={color.name}
-                    type="button"
-                    onClick={() => {
-                      const current = form.colors
-                        ? form.colors.split(",")
-                        : [];
-
-                      const updated = isActive
-                        ? current.filter((c) => c !== color.name)
-                        : [...current, color.name];
-
-                      setForm({ ...form, colors: updated.join(",") });
-                    }}
-                    className={cn(
-                      "h-8 w-8 rounded-full border",
-                      isActive && "scale-110 border-primary"
-                    )}
-                  >
-                    <div
-                      className="h-full w-full rounded-full"
-                      style={{ backgroundColor: color.value }}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-            {errors.colors && (
-              <p className="text-sm text-red-500">{errors.colors}</p>
-            )}
-          </div>
-
-          {/* IMAGE */}
-          {/* IMAGE 1 */}
-            <div>
-              <label className="cursor-pointer">
-                <input type="file" hidden onChange={handleImageChange} />
-                <div className="h-24 border-2 border-dashed rounded-xl flex items-center justify-center">
-                  <Upload />
-                </div>
-              </label>
-            </div>
-
-            {/* IMAGE 2 */}
-            <div>
-              <label className="cursor-pointer">
-                <input type="file" hidden onChange={handleImage2Change} />
-                <div className="h-24 border-2 border-dashed rounded-xl flex items-center justify-center">
-                  <Upload />
-                </div>
-              </label>
-            </div>
-
-            {/* PREVIEW */}
-            <div className="flex gap-3">
-              {(form.image || form.imageUrl) && (
-                <img
-                  src={
-                    form.image
-                      ? URL.createObjectURL(form.image)
-                      : form.imageUrl
-                  }
-                  className="h-20 w-20 rounded-xl object-cover"
-                />
-              )}
-
-              {(form.image2 || form.imageUrl2) && (
-                <img
-                  src={
-                    form.image2
-                      ? URL.createObjectURL(form.image2)
-                      : form.imageUrl2
-                  }
-                  className="h-20 w-20 rounded-xl object-cover"
-                />
-              )}
-            </div>
-        </CardContent>
-
-        {/* FOOTER */}
-        <div className="border-t p-4 sm:p-6 flex gap-3">
-          <Button variant="outline" onClick={handleCancel} className="w-full">
-            Cancelar
-          </Button>
-
-          <Button onClick={handleSave} disabled={isLoading} className="w-full">
-            {isLoading ? "Guardando..." : "Guardar"}
-          </Button>
+          <Input
+            type="number"
+            placeholder="Precio"
+            value={form.price}
+            onChange={(e) =>
+              setForm({ ...form, price: e.target.value })
+            }
+            className="h-11"
+          />
+            {submitted && errors.price && (
+            <p className="text-red-500 text-sm">{errors.price}</p>
+          )}
         </div>
+
+        <Textarea
+          placeholder="Descripción del producto"
+          value={form.description}
+          onChange={(e) =>
+            setForm({ ...form, description: e.target.value })
+          }
+          className="min-h-[100px]"
+        />
+        {submitted && errors.description && (
+            <p className="text-red-500 text-sm">{errors.description}</p>
+          )}
+
+        {/* CATEGORIA */}
+        <select
+          value={form.categoryId || ""}
+          onChange={(e) =>
+            setForm({ ...form, categoryId: e.target.value })
+          }
+          className="w-full h-11 border rounded-xl px-3 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="">Selecciona una categoría</option>
+          {categories.map((c: any) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        {submitted && errors.categoryId && (
+            <p className="text-red-500 text-sm">{errors.categoryId}</p>
+          )}
+
+        {/* VARIANTES */}
+        <div className="space-y-3">
+          <Label className="text-base font-medium">Variantes</Label>
+
+          {form.variants.map((v, i) => (
+            <div
+              key={i}
+              className="grid grid-cols-4 gap-2 items-center p-3 border rounded-xl bg-muted/30"
+            >
+              <select
+                value={v.size}
+                onChange={(e) =>
+                  updateVariant(i, "size", e.target.value)
+                }
+                className="h-10 rounded-lg border px-2"
+              >
+                <option value="">Talla</option>
+                {sizesOptions.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+
+              <select
+                value={v.color}
+                onChange={(e) =>
+                  updateVariant(i, "color", e.target.value)
+                }
+                className="h-10 rounded-lg border px-2"
+              >
+                <option value="">Color</option>
+                {colorsOptions.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+
+              <Input
+                  type="number"
+                  placeholder="Stock"
+                  value={v.stock === "" ? "" : v.stock}
+                  onFocus={(e) => {
+                    // 🔥 limpia el 0 automáticamente
+                    if (v.stock === 0) {
+                      updateVariant(i, "stock", "");
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    updateVariant(
+                      i,
+                      "stock",
+                      value === "" ? "" : Number(value)
+                    );
+                  }}
+                  className="h-10"
+                />
+
+              <button
+                onClick={() => removeVariant(i)}
+                className="h-10 rounded-lg bg-red-500 text-white hover:bg-red-600 transition"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <Button
+            onClick={addVariant}
+            variant="outline"
+            className="w-full h-10"
+          >
+            + Agregar variante
+          </Button>
+
+          {errors.variants && (
+            <p className="text-red-500 text-sm">
+              {errors.variants}
+            </p>
+          )}
+        </div>
+
+        {/* IMÁGENES */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          
+          <label className="cursor-pointer">
+            <div className="h-28 border-2 border-dashed rounded-xl flex items-center justify-center hover:bg-muted transition">
+              <span className="text-sm text-muted-foreground">
+                Subir imagen principal
+              </span>
+            </div>
+            <input type="file" hidden onChange={handleImageChange} />
+          </label>
+
+          <label className="cursor-pointer">
+            <div className="h-28 border-2 border-dashed rounded-xl flex items-center justify-center hover:bg-muted transition">
+              <span className="text-sm text-muted-foreground">
+                Subir imagen secundaria
+              </span>
+            </div>
+            <input type="file" hidden onChange={handleImage2Change} />
+          </label>
+          
+        </div>
+
+        {/* PREVIEW */}
+        <div className="flex gap-3">
+          {(form.image || form.imageUrl) && (
+            <img
+              src={
+                form.image
+                  ? URL.createObjectURL(form.image)
+                  : form.imageUrl
+              }
+              className="h-20 w-20 rounded-xl object-cover border"
+            />
+          )}
+
+          {(form.image2 || form.imageUrl2) && (
+            <img
+              src={
+                form.image2
+                  ? URL.createObjectURL(form.image2)
+                  : form.imageUrl2
+              }
+              className="h-20 w-20 rounded-xl object-cover border"
+            />
+          )}
+
+          {submitted && errors.image && (
+            <p className="text-red-500 text-sm">{errors.image}</p>
+          )}
+        </div>
+      </CardContent>
+
+      {/* FOOTER */}
+      <div className="border-t p-4 flex gap-3">
+        <Button
+          onClick={handleCancel}
+          variant="outline"
+          className="w-full"
+        >
+          Cancelar
+        </Button>
+
+        <Button
+          onClick={handleSave}
+          disabled={isLoading}
+          className="w-full"
+        >
+          {isLoading ? "Guardando..." : "Guardar"}
+        </Button>
       </div>
+
     </div>
-  );
+  </div>
+);
 };
 
 export default ProductForm;

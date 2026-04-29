@@ -1,25 +1,62 @@
-import { MessageCircle } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 
 interface WhatsAppButtonProps {
-  url: string;
+  phone?: string;
+  productName?: string;
+  price?: number;
   label?: string;
   fullWidth?: boolean;
 }
 
-const WhatsAppButton = ({ url, label = "Buy via WhatsApp", fullWidth = false }: WhatsAppButtonProps) => {
+const WhatsAppButton = ({
+  phone,
+  productName,
+  price,
+  label = "Comprar Ahora",
+  fullWidth = false,
+}: WhatsAppButtonProps) => {
+  if (!phone) return null;
+
+  // 🔥 limpiar número
+  const cleanPhone = phone.replace(/\D/g, "");
+
+  const message = `Hola, me interesa el producto: ${productName} - $${price}`;
+  const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`inline-flex items-center justify-center gap-2 rounded-xl bg-whatsapp px-6 py-3.5 text-sm font-bold text-whatsapp-foreground shadow-md transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5 ${
-        fullWidth ? "w-full" : ""
-      }`}
-    >
-      <MessageCircle size={20} />
+  <a
+    href={url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={`
+      group inline-flex items-center justify-center gap-2
+      rounded-2xl
+      bg-whatsapp
+      px-6 py-4
+      text-sm font-semibold
+      text-whatsapp-foreground
+      shadow-md shadow-black/10
+      transition-all duration-200
+      active:scale-[0.98]
+      hover:shadow-lg hover:-translate-y-0.5
+      focus:outline-none focus:ring-2 focus:ring-whatsapp/40
+      ${fullWidth ? "w-full" : ""}
+    `}
+  >
+    {/* icono */}
+    <span className="flex items-center justify-center">
+      <FaWhatsapp
+        size={20}
+        className="transition-transform duration-200 group-hover:scale-110"
+      />
+    </span>
+
+    {/* texto */}
+    <span className="tracking-tight">
       {label}
-    </a>
-  );
+    </span>
+  </a>
+);
 };
 
 export default WhatsAppButton;

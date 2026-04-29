@@ -1,36 +1,62 @@
-import { Link } from "react-router-dom";
-import { type Product, formatPrice, getStoreById } from "@/data/mockData";
+import { useNavigate } from "react-router-dom";
+import { PublicProduct } from "@/services/publicService";
 
-interface ProductCardProps {
-  product: Product;
+interface Props {
+  product: PublicProduct;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
-  const store = getStoreById(product.storeId);
+const ProductCard = ({ product }: Props) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (!product?.id) return;
+    navigate(`/product/${product.id}`);
+  };
 
   return (
-    <Link
-      to={`/product/${product.id}`}
-      className="group animate-fade-in overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => e.key === "Enter" && handleClick()}
+      className="group relative cursor-pointer rounded-2xl bg-card overflow-hidden border border-border/60 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 ease-out focus:outline-none focus:ring-4 focus:ring-ring/20"
     >
-      <div className="aspect-[3/4] overflow-hidden bg-secondary">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-          loading="lazy"
-        />
+      {/* IMAGE */}
+      <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+            No image
+          </div>
+        )}
+
+        {/* Subtle gradient on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       </div>
-      <div className="p-3">
-        <p className="text-xs text-muted-foreground">{store?.name}</p>
-        <h3 className="mt-0.5 text-sm font-medium leading-tight text-foreground line-clamp-2">
+
+      {/* INFO */}
+      <div className="p-5 space-y-2">
+        <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-muted-foreground">
+          {product.categoryName || "Sin categoría"}
+        </p>
+
+        <h3 className="text-base font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground/80 transition-colors">
           {product.name}
         </h3>
-        <p className="mt-1.5 font-display text-base font-semibold text-primary">
-          {formatPrice(product.price)}
-        </p>
+
+        <div className="pt-1 flex items-baseline gap-1">
+          <span className="text-lg font-semibold tracking-tight text-foreground">
+            ${product.price}
+          </span>
+        </div>
       </div>
-    </Link>
+    </article>
   );
 };
 

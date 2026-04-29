@@ -2,6 +2,7 @@ import { useState } from "react";
 import Header from "../Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { getRole } from "@/utils/storage";
 interface Props {
   onLogin: () => void;
 }
@@ -25,8 +26,17 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     await handleLogin(username, password);
 
+    const role = getRole(); // 🔥 obtenemos rol
+
+    if (role === "ADMIN") {
+      navigate("/admin");
+    } else if (role === "OWNER") {
+      navigate("/store/dashboard");
+    } else {
+      navigate("/dashboard");
+    }
+
     setError("");
-    navigate("/redirect"); // redirige
   } catch (err) {
     setError("Usuario o contraseña incorrectos");
   }

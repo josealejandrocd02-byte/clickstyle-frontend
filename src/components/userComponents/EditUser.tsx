@@ -7,11 +7,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, User, Lock } from "lucide-react";
+import { Loader2, User, Lock,Mail  } from "lucide-react";
 import { useEffect, useState } from "react";
 import ChangePasswordModal from "./ChangePasswordModal";
 import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
+import ChangeEmailModal from "./ChangeEmailModal";
 
 /* =========================
    HELPERS
@@ -44,9 +45,10 @@ interface Props {
 }
 
 const EditUser = ({ onClose }: Props) => {
-  const { user, loading, update, isUpdating } = useUser();
+  const { user, loading, update, isUpdating, } = useUser();
 
   const [openPassword, setOpenPassword] = useState(false);
+  const [openEmail, setOpenEmail] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -257,7 +259,17 @@ const EditUser = ({ onClose }: Props) => {
                 <Lock className="h-4 w-4 mr-2" />
                 Password
               </Button>
+              <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setOpenEmail(true)}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Cambiar Email
+            </Button>
             </div>
+
+
 
             {/* FOOTER */}
             <div className="flex gap-3 pt-2">
@@ -297,6 +309,10 @@ const EditUser = ({ onClose }: Props) => {
         <ChangePasswordModal
           onClose={() => setOpenPassword(false)}
         />
+      )}
+
+      {openEmail && (
+        <ChangeEmailModal onClose={() => setOpenEmail(false)} />
       )}
     </div>
   );
