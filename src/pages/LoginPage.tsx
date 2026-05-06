@@ -1,15 +1,16 @@
 import LoginView from "@/components/login_register/LoginView";
 
+// 🔥 Definimos la interfaz para que TypeScript no marque error
+interface LoginPageProps {
+  onClose: () => void;
+}
 
-const LoginPage = () => {
-
-
+const LoginPage = ({ onClose }: LoginPageProps) => {
   return (
     <>
-    <LoginView/>
+      <LoginView onClose={onClose} />
     </>
   );
 };
 
 export default LoginPage;
-

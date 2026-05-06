@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useState, useEffect } from "react";
 
 import Index from "./pages/Index";
 import ProductDetail from "./pages/ProductDetail";
@@ -11,8 +12,6 @@ import StoresPage from "./pages/StoresPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-
-
 import UserDashboard from "./pages/user/UserDashboard";
 
 import { getRole } from "@/utils/storage";
@@ -22,10 +21,18 @@ import SellerDashboard from "./pages/seller/SellerDashboard ";
 
 const queryClient = new QueryClient();
 
+// 🔥 1. Emitimos un evento global en lugar de usar Context
+const RequireAuth = () => {
+  useEffect(() => {
+    window.dispatchEvent(new Event("openLogin"));
+  }, []);
+  return <Navigate to="/" replace />;
+};
+
 /* 🔐 PROTECTED */
 const ProtectedRoute = ({ children, roles }: any) => {
   if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
+    return <RequireAuth />;
   }
 
   const role = getRole();
@@ -37,61 +44,74 @@ const ProtectedRoute = ({ children, roles }: any) => {
   return children;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+const App = () => {
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
-      <BrowserRouter>
-        <Routes>
+  // 🔥 2. Escuchamos el evento para abrir el modal desde cualquier parte
+  useEffect(() => {
+    const handleOpen = () => setIsLoginOpen(true);
+    window.addEventListener("openLogin", handleOpen);
+    
+    return () => window.removeEventListener("openLogin", handleOpen);
+  }, []);
 
-          {/* 🌐 PUBLIC */}
-          <Route path="/" element={<Index />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/store/:id" element={<StorePage />} />
-          <Route path="/stores" element={<StoresPage />} />
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
 
-          {/* 🔐 AUTH */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+        <BrowserRouter>
+          {/* 🔥 3. Pasamos la función onClose como Prop al modal */}
+          {isLoginOpen && <LoginPage onClose={() => setIsLoginOpen(false)} />}
 
-          {/* 👤 USER PANEL */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute roles={["USER", "OWNER"]}>
-                <UserDashboard />
-              </ProtectedRoute>
-            }
-          />
+          <Routes>
+            {/* 🌐 PUBLIC */}
+            <Route path="/" element={<Index />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/store/:id" element={<StorePage />} />
+            <Route path="/stores" element={<StoresPage />} />
 
-          {/* 🏪 STORE PANEL */}
-          <Route
-            path="/store/dashboard"
-            element={
-              <ProtectedRoute roles={["OWNER"]}>
-                <SellerDashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* 🔐 AUTH */}
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* 👑 ADMIN */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute roles={["ADMIN"]}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* 👤 USER PANEL */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute roles={["USER", "OWNER"]}>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* ❌ */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+            {/* 🏪 STORE PANEL */}
+            <Route
+              path="/store/dashboard"
+              element={
+                <ProtectedRoute roles={["OWNER"]}>
+                  <SellerDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 👑 ADMIN */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute roles={["ADMIN"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ❌ */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

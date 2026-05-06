@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -13,6 +13,8 @@ import { isAuthenticated } from "@/utils/isTokenValid";
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  // Opcional: Usamos useLocation si queremos saber dónde estamos
+  const location = useLocation(); 
 
   const role = getRole();
   const isAuth = isAuthenticated();
@@ -25,18 +27,33 @@ const Header = () => {
     navigate("/");
   };
 
-  // 🔥 LOGO inteligente
   const getHomeLink = () => {
     if (!isAuth) return "/";
     if (role === "ADMIN") return "/admin";
-    return "/dashboard"; // USER + OWNER
+    return "/dashboard";
+  };
+
+  // 🔥 Modificamos esta función
+  const handleOpenLogin = () => {
+    setMobileOpen(false); // Cerramos el menú móvil si está abierto
+    
+    // Si no estamos en el inicio, navegamos a "/" primero
+    if (location.pathname !== "/") {
+      navigate("/");
+    }
+    
+    // Y luego emitimos el evento para abrir el modal.
+    // Usamos un pequeño timeout para asegurarnos de que el modal se abra
+    // DESPUÉS de que React Router haya montado la página de inicio.
+    setTimeout(() => {
+      window.dispatchEvent(new Event("openLogin"));
+    }, 50); 
   };
 
   return (
     <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
 
-        {/* 🔷 LOGO */}
         <Link
           to={getHomeLink()}
           className="font-display text-xl font-bold tracking-tight"
@@ -57,21 +74,18 @@ const Header = () => {
 
           {isAuth ? (
             <>
-              {/* 👤 USER PANEL */}
               {role !== "ADMIN" && (
                 <Link to="/dashboard" className="text-sm font-medium">
                   Mi cuenta
                 </Link>
               )}
 
-              {/* 🏪 STORE DASHBOARD */}
               {role === "OWNER" && (
                 <Link to="/store/dashboard" className="text-sm font-medium">
                   Mi tienda
                 </Link>
               )}
 
-              {/* 👑 ADMIN */}
               {role === "ADMIN" && (
                 <Link to="/admin" className="text-sm font-medium">
                   Admin
@@ -91,13 +105,17 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Link to="/login" className="text-sm font-medium">
+              {/* 🔥 Botón Login Desktop */}
+              <button 
+                onClick={handleOpenLogin}
+                className="text-sm font-medium cursor-pointer hover:text-primary transition-colors"
+              >
                 Login
-              </Link>
+              </button>
 
               <Link
                 to="/register"
-                className="text-sm bg-primary text-white px-3 py-1 rounded"
+                className="text-sm bg-primary text-white px-3 py-1 rounded hover:bg-primary/90 transition-colors"
               >
                 Empezar
               </Link>
@@ -169,13 +187,13 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="px-3 py-2"
+               {/* 🔥 Botón Login Mobile */}
+              <button
+                onClick={handleOpenLogin}
+                className="text-left px-3 py-2"
               >
                 Login
-              </Link>
+              </button>
 
               <Link
                 to="/register"
